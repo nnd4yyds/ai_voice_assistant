@@ -4,4 +4,4 @@ set(EXTRA_COMPONENT_DIRS)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-project(freertos_test)
+project(voice_assistant)
