@@ -5,12 +5,16 @@
 
 static const char *TAG = "i2s_audio";
 
-void i2s_microphone_init(i2s_chan_handle_t *rx_handle)
+esp_err_t i2s_microphone_init(i2s_chan_handle_t *rx_handle)
 {
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
     chan_cfg.dma_desc_num = 6;
     chan_cfg.dma_frame_num = 240;
-    ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, NULL, rx_handle));
+    esp_err_t ret = i2s_new_channel(&chan_cfg, NULL, rx_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create I2S RX channel");
+        return ret;
+    }
 
     i2s_std_config_t std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
@@ -28,17 +32,30 @@ void i2s_microphone_init(i2s_chan_handle_t *rx_handle)
             },
         },
     };
-    ESP_ERROR_CHECK(i2s_channel_init_std_mode(*rx_handle, &std_cfg));
-    ESP_ERROR_CHECK(i2s_channel_enable(*rx_handle));
+    ret = i2s_channel_init_std_mode(*rx_handle, &std_cfg);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to init I2S RX std mode");
+        return ret;
+    }
+    ret = i2s_channel_enable(*rx_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to enable I2S RX channel");
+        return ret;
+    }
     ESP_LOGI(TAG, "Microphone initialized");
+    return ESP_OK;
 }
 
-void i2s_speaker_init(i2s_chan_handle_t *tx_handle)
+esp_err_t i2s_speaker_init(i2s_chan_handle_t *tx_handle)
 {
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_1, I2S_ROLE_MASTER);
     chan_cfg.dma_desc_num = 6;
     chan_cfg.dma_frame_num = 240;
-    ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, tx_handle, NULL));
+    esp_err_t ret = i2s_new_channel(&chan_cfg, tx_handle, NULL);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create I2S TX channel");
+        return ret;
+    }
 
     i2s_std_config_t std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
@@ -56,9 +73,18 @@ void i2s_speaker_init(i2s_chan_handle_t *tx_handle)
             },
         },
     };
-    ESP_ERROR_CHECK(i2s_channel_init_std_mode(*tx_handle, &std_cfg));
-    ESP_ERROR_CHECK(i2s_channel_enable(*tx_handle));
+    ret = i2s_channel_init_std_mode(*tx_handle, &std_cfg);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to init I2S TX std mode");
+        return ret;
+    }
+    ret = i2s_channel_enable(*tx_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to enable I2S TX channel");
+        return ret;
+    }
     ESP_LOGI(TAG, "Speaker initialized");
+    return ESP_OK;
 }
 
 void i2s_play_audio(i2s_chan_handle_t tx_handle, const char *audio_data, int audio_len)
