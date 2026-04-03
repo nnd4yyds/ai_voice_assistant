@@ -341,3 +341,8 @@ char *baidu_text_to_speech_to_text(const char *text)
     
     return result;
 }
+
+const char *baidu_get_access_token_str(void)
+{
+    return access_token;
+}

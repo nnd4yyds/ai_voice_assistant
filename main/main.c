@@ -25,7 +25,7 @@ void app_main(void)
     wifi_init_sta();
 
     xTaskCreate(task_main_loop, "main", 8192, NULL, 5, NULL);
-    xTaskCreate(task_serial_test, "serial_test", 8192, NULL, 5, NULL);
+    xTaskCreate(task_serial_test, "serial_test", 16384, NULL, 5, NULL);
 
     ESP_LOGI(TAG, "All tasks created successfully - Serial Test Mode Active");
 }

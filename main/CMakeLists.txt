@@ -5,6 +5,7 @@ idf_component_register(
         "audio/i2s_audio.c"
         "audio/wakeup.c"
         "api/baidu_api.c"
+        "api/zhipu_api.c"
         "tasks/app_tasks.c"
         "serial_test.c"
     INCLUDE_DIRS
