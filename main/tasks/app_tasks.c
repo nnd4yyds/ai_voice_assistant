@@ -95,7 +95,8 @@ void task_main_loop(void *pvParameters)
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
-    baidu_get_access_token();
+    // 不自动获取 token，由 serial_test 任务手动获取
+    ESP_LOGI(TAG, "WiFi connected, ready for commands");
 
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));

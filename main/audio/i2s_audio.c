@@ -1,4 +1,5 @@
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
 #include "secrets.h"
 #include "i2s_audio.h"
 

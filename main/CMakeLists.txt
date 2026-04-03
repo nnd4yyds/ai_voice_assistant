@@ -1,12 +1,12 @@
 idf_component_register(
     SRCS
         "main.c"
-        "test_main.c"
         "wifi/wifi_manager.c"
         "audio/i2s_audio.c"
         "audio/wakeup.c"
         "api/baidu_api.c"
         "tasks/app_tasks.c"
+        "serial_test.c"
     INCLUDE_DIRS
         "."
     REQUIRES
