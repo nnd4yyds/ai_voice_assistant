@@ -1,3 +1,22 @@
-idf_component_register(SRCS "main.c" "test_main.c"
-                       INCLUDE_DIRS "."
-                       REQUIRES esp_wifi esp_event nvs_flash esp_netif esp_http_client driver json esp-sr)
+idf_component_register(
+    SRCS
+        "main.c"
+        "test_main.c"
+        "wifi/wifi_manager.c"
+        "audio/i2s_audio.c"
+        "audio/wakeup.c"
+        "api/baidu_api.c"
+        "tasks/app_tasks.c"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        esp_wifi
+        esp_event
+        nvs_flash
+        esp_netif
+        esp_http_client
+        driver
+        json
+        esp-sr
+        mbedtls
+)

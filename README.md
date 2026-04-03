@@ -1,231 +1,191 @@
-# ESP32-S3 语音助手项目
+# ESP32-S3 语音助手
 
-这是一个基于ESP32-S3的语音助手项目，支持百度语音识别和语音合成。
+基于 ESP32-S3 的智能语音助手，支持本地唤醒词检测、云端语音识别（STT）与语音合成（TTS）。
 
-## 硬件推荐
+## 特性
 
-### 1. 麦克风模块推荐
-- **INMP441**：数字麦克风，I2S接口，高灵敏度，低噪声
-- **SPH0645LM4H**：数字麦克风，I2S接口，低功耗
-- **MSM261S4030H0R**：模拟麦克风，需要ADC或外接ADC
+- **本地唤醒词检测**：基于 ESP-SR 的 WakeNet 模型，支持 AEC/SE/VAD 音频前处理
+- **语音识别（STT）**：对接百度 AI 开放平台，16kHz 中文普通话识别
+- **语音合成（TTS）**：对接百度 AI 开放平台，中文语音播报
+- **WiFi 管理**：事件驱动 STA 连接，自动重连（最多 5 次）
+- **FreeRTOS 多任务**：唤醒检测、语音识别、语音合成并行运行
 
-### 2. 扬声器模块推荐
-- **MAX98357A**：I2S数字音频放大器，3W输出，直接驱动扬声器
-- **PCM5102A**：I2S DAC模块，高音质，需要外接放大器
-- **UDA1334A**：I2S DAC模块，低功耗
+## 硬件需求
 
-### 3. 一体化模块推荐
-- **ESP32-S3-DevKitC-1**：官方开发板，需要外接音频模块
-- **ESP32-S3-WROOM-1**：模组，需要自己设计音频电路
-- **M5Stack Core2**：集成扬声器和麦克风，但需要确认I2S接口
+### 开发板
 
-## 硬件连接
+- ESP32-S3（4MB Flash，DIO 模式，80MHz）
 
-### INMP441 麦克风连接
-```
-INMP441    ESP32-S3
-VDD   ->   3.3V
-GND   ->   GND
-SCK   ->   GPIO41 (I2S_MIC_BCK_IO)
-WS    ->   GPIO42 (I2S_MIC_WS_IO)
-SD    ->   GPIO2  (I2S_MIC_DI_IO)
-L/R   ->   GND (左声道) 或 VDD (右声道)
-```
+### 麦克风（I2S 输入）
 
-### MAX98357A 扬声器连接
-```
-MAX98357A  ESP32-S3
-VIN   ->   5V
-GND   ->   GND
-BCLK  ->   GPIO17 (I2S_SPK_BCK_IO)
-LRC   ->   GPIO18 (I2S_SPK_WS_IO)
-DIN   ->   GPIO8  (I2S_SPK_DO_IO)
-GAIN  ->   悬空或接电阻设置增益
-```
+| 信号 | GPIO |
+|------|------|
+| BCLK | GPIO 41 |
+| WS   | GPIO 42 |
+| DIN  | GPIO 2  |
 
-## 百度AI配置
+推荐模块：INMP441、SPH0645LM4H
 
-### 1. 注册百度AI开放平台
-- 访问：https://ai.baidu.com/
-- 注册账号并创建应用
+### 扬声器（I2S 输出）
 
-### 2. 获取API密钥
-- 在控制台创建语音识别应用
-- 获取API Key和Secret Key
-- 获取App ID
+| 信号 | GPIO |
+|------|------|
+| BCLK | GPIO 17 |
+| WS   | GPIO 18 |
+| DOUT | GPIO 8  |
 
-### 3. 配置代码
-在main.c中修改以下配置：
-```c
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-#define BAIDU_API_KEY "YOUR_API_KEY"
-#define BAIDU_SECRET_KEY "YOUR_SECRET_KEY"
-#define BAIDU_APP_ID "YOUR_APP_ID"
-```
+推荐模块：MAX98357A、UDA1334A
 
-## 编译和烧录
+### 音频参数
 
-### 1. 设置ESP-IDF环境
-```bash
-# Windows
-export IDF_PATH="C:/esp/esp-idf"
-. $IDF_PATH/export.ps1
-
-# Linux/Mac
-export IDF_PATH="/path/to/esp-idf"
-source $IDF_PATH/export.sh
-```
-
-### 2. 安装ESP-SR库
-```bash
-# 在项目目录下执行
-idf.py add-dependency "espressif/esp-sr"
-```
-
-### 3. 配置项目
-```bash
-idf.py menuconfig
-```
-
-### 4. 编译项目
-```bash
-idf.py build
-```
-
-### 5. 烧录和监控
-```bash
-idf.py -p COM3 flash monitor
-```
-
-## 功能说明
-
-### 1. 语音识别
-- 从麦克风录制音频
-- 发送到百度语音识别API
-- 获取识别结果
-
-### 2. 语音合成
-- 将文本发送到百度语音合成API
-- 获取音频数据
-- 通过扬声器播放
-
-### 3. 唤醒词检测
-- 使用ESP-SR库实现本地唤醒词检测
-- 默认唤醒词："Hi ESP"
-- 低功耗，实时检测
-- 支持自定义唤醒词
-
-### 4. 主逻辑
-- 唤醒词检测
-- 语音识别
-- 结果处理
-- 语音合成
-- 播放回复
-
-## 注意事项
-
-1. **音频格式**：使用16kHz采样率，16位深度，单声道PCM格式
-2. **网络连接**：需要稳定的WiFi连接
-3. **API限制**：百度AI有调用次数限制，请注意使用量
-4. **电源供应**：扬声器模块可能需要外部电源
-5. **引脚配置**：根据实际硬件调整I2S引脚定义
-
-## 扩展功能
-
-### 1. 唤醒词检测（已实现）
-使用ESP-SR库实现本地唤醒词检测：
-- 低功耗，实时检测
-- 支持自定义唤醒词
-- 高精度识别
-
-### 2. 自然语言处理
-可以添加本地NLP处理，如：
-- 关键词提取
-- 意图识别
-- 对话管理
-
-### 3. 多语言支持
-百度语音API支持多种语言：
-- 中文
-- 英文
-- 粤语
-- 四川话
-
-## 故障排除
-
-### 1. WiFi连接失败
-- 检查SSID和密码
-- 确认WiFi信号强度
-- 检查防火墙设置
-
-### 2. 语音识别失败
-- 检查百度API密钥
-- 确认网络连接
-- 检查音频格式
-
-### 3. 音频播放异常
-- 检查I2S连接
-- 确认引脚配置
-- 检查电源供应
-
-### 4. 唤醒词检测失败
-- 检查麦克风连接
-- 确认ESP-SR库安装
-- 调整检测灵敏度
-- 检查环境噪声
+- 采样率：16000 Hz
+- 位深：16 bit
+- 声道：单声道
+- 音频缓冲区：80000 字节（约 5 秒）
 
 ## 项目结构
 
 ```
-PROJECT/
 ├── main/
-│   ├── main.c          # 主程序（包含语音助手功能）
-│   ├── test_main.c     # 测试程序（仅WiFi和HTTP测试）
-│   └── CMakeLists.txt  # 组件配置
-├── .vscode/
-│   ├── settings.json   # VSCode设置
-│   ├── c_cpp_properties.json  # C/C++配置
-│   └── launch.json     # 调试配置
-├── CMakeLists.txt      # 工程配置
-├── README.md          # 项目说明
-└── dependencies.lock  # 依赖锁定文件
+│   ├── main.c                  # 入口：初始化与任务创建
+│   ├── test_main.c             # 独立测试程序（WiFi + HTTP）
+│   ├── secrets.h               # 凭据与引脚配置（已忽略）
+│   ├── secrets.h.example       # secrets.h 模板
+│   ├── CMakeLists.txt          # 组件注册与依赖
+│   ├── idf_component.yml       # 组件清单（esp-sr）
+│   ├── api/
+│   │   ├── baidu_api.c/h       # 百度 API 客户端（STT/TTS/Token）
+│   ├── audio/
+│   │   ├── i2s_audio.c/h       # I2S 麦克风与扬声器驱动
+│   │   ├── wakeup.c/h          # ESP-SR 唤醒词检测任务
+│   ├── tasks/
+│   │   ├── app_tasks.c/h       # FreeRTOS 应用任务
+│   └── wifi/
+│       ├── wifi_manager.c/h    # WiFi STA 连接管理
+├── managed_components/
+│   └── espressif__esp-dsp/     # ESP-DSP（esp-sr 的传递依赖）
+├── sdkconfig.defaults          # 默认配置覆盖
+├── CMakeLists.txt              # 顶层 CMake
+├── .vscode/                    # VSCode / ESP-IDF 插件配置
+└── build/                      # 编译输出
 ```
 
-## 测试版本说明
+## 快速开始
 
-### 1. 测试程序功能
-- WiFi连接测试
-- HTTP客户端测试
-- 不包含音频和唤醒词检测功能
-- 适合验证基本网络功能
+### 1. 准备环境
 
-### 2. 切换测试程序
-修改main/CMakeLists.txt文件，将test_main.c添加到源文件列表：
-```cmake
-idf_component_register(SRCS "test_main.c"
-                       INCLUDE_DIRS "."
-                       REQUIRES esp_wifi esp_event nvs_flash esp_netif esp_http_client)
+```bash
+# 设置 ESP-IDF 环境（以 v5.2.5 为例）
+. $IDF_PATH/export.sh   # Linux/macOS
+. $env:IDF_PATH/export.ps1  # Windows
 ```
 
-### 3. 测试步骤
-1. 修改WiFi配置
-2. 编译烧录
-3. 查看串口输出
-4. 验证HTTP请求是否成功
+### 2. 配置凭据
 
-## 下一步计划
+复制模板并填写你的 WiFi 和百度 API 信息：
 
-1. 购买硬件模块（INMP441 + MAX98357A）
-2. 注册百度AI开放平台账号
-3. 配置WiFi和API密钥
-4. 安装ESP-SR库（用于唤醒词检测）
-5. 编译烧录测试
-6. 根据实际效果优化代码
+```bash
+cp main/secrets.h.example main/secrets.h
+```
 
-## 联系支持
+编辑 `main/secrets.h`，填入以下内容：
 
-如有问题，请检查：
-1. ESP-IDF官方文档
-2. 百度AI开发文档
-3. 硬件模块数据手册
+```c
+#define WIFI_SSID "你的WiFi名称"
+#define WIFI_PASSWORD "你的WiFi密码"
+#define BAIDU_API_KEY "你的百度API Key"
+#define BAIDU_SECRET_KEY "你的百度Secret Key"
+#define BAIDU_APP_ID "你的百度App ID"
+```
+
+### 3. 获取百度 API 密钥
+
+1. 访问 [百度 AI 开放平台](https://ai.baidu.com/)
+2. 注册账号并创建语音技术应用
+3. 在应用详情中获取 API Key、Secret Key 和 App ID
+
+### 4. 编译与烧录
+
+```bash
+# 编译
+idf.py build
+
+# 烧录并监控串口输出（替换为你的端口号）
+idf.py -p COM13 flash monitor
+```
+
+## 架构说明
+
+### 数据流
+
+```
+麦克风 (I2S) ──→ [唤醒检测任务: ESP-SR AFE] ──→ 唤醒标志
+                                                    │
+                                                    ▼
+                              [语音识别任务: 录制 ~3 秒音频]
+                                                    │
+                                                    ▼
+                              [百度 STT API: 音频 → 文本]
+                                                    │
+                                                    ▼
+                                              日志输出
+
+[TTS 任务: 首次运行] ──→ 百度 TTS API ──→ "你好，我是ESP32语音助手" ──→ 扬声器 (I2S)
+```
+
+### FreeRTOS 任务
+
+| 任务 | 功能 |
+|------|------|
+| `task_main_loop` | 等待 WiFi 连接，获取百度访问令牌 |
+| `task_wakeup_detection` | 持续运行 ESP-SR AFE 管道，检测唤醒词 |
+| `task_speech_recognition` | 唤醒后录制音频并发送至百度 STT |
+| `task_speech_synthesis` | 首次运行时播放欢迎语 |
+
+### 模块说明
+
+| 模块 | 职责 |
+|------|------|
+| `wifi/wifi_manager` | WiFi STA 连接与状态管理 |
+| `audio/i2s_audio` | I2S 麦克风录音与扬声器播放 |
+| `audio/wakeup` | ESP-SR 唤醒词检测（WakeNet + AFE） |
+| `api/baidu_api` | 百度 OAuth2 认证、STT、TTS 接口封装 |
+| `tasks/app_tasks` | 应用层 FreeRTOS 任务实现 |
+
+## 百度 API 详情
+
+| 接口 | 端点 | 参数 |
+|------|------|------|
+| OAuth2 Token | `aip.baidubce.com/oauth/2.0/token` | client_credentials |
+| 语音识别 (STT) | `vop.baidu.com/server_api` | dev_pid=1537（中文普通话） |
+| 语音合成 (TTS) | `tsn.baidu.com/text2audio` | 中文，MP3 (aue=4)，spd=5，pit=5，vol=5 |
+
+## 已知限制
+
+- 语音识别任务固定录制约 3 秒音频，无 VAD 端点检测
+- 语音合成任务仅在首次运行时播放固定欢迎语
+- 识别结果仅输出日志，尚未与 TTS 回复逻辑联动
+- 音频缓冲区为全局共享，无线程安全保护
+- API 调用失败时无重试机制
+
+## 故障排除
+
+| 问题 | 排查方法 |
+|------|----------|
+| WiFi 连接失败 | 检查 SSID/密码，确认信号强度 |
+| 唤醒词无响应 | 检查麦克风 I2S 接线，确认 ESP-SR 库已安装 |
+| 语音识别失败 | 验证百度 API 密钥，检查网络连接和音频格式 |
+| 扬声器无声 | 检查 I2S 接线（BCLK/WS/DOUT），确认供电 |
+| 编译失败 | 运行 `idf.py fullclean` 后重新编译 |
+
+## 依赖
+
+| 组件 | 版本 | 来源 |
+|------|------|------|
+| ESP-IDF | 5.2.5 | 本地安装 |
+| esp-sr | 1.9.5 | Espressif 组件注册表 |
+| esp-dsp | 1.4.12 | esp-sr 传递依赖 |
+
+## 许可证
+
+本项目基于 ESP-IDF 框架开发，遵循 Espressif 相关开源协议。

@@ -84,3 +84,6 @@ RemoteSystemsTempFiles/*
 **/list/*
 *.cnon
 *.swp
+
+# Secrets (WiFi passwords, API keys)
+main/secrets.h
