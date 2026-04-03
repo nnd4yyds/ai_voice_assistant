@@ -7,7 +7,7 @@
 #include "wifi/wifi_manager.h"
 #include "audio/i2s_audio.h"
 #include "audio/wakeup.h"
-#include "api/baidu_api.h"
+
 #include "app_tasks.h"
 
 static const char *TAG = "app_tasks";
@@ -44,13 +44,7 @@ void task_speech_recognition(void *pvParameters)
                 vTaskDelay(pdMS_TO_TICKS(10));
             }
 
-            if (audio_buffer_index > 0) {
-                char *result = baidu_speech_to_text(audio_buffer, audio_buffer_index);
-                if (result) {
-                    ESP_LOGI(TAG, "Recognized: %s", result);
-                    free(result);
-                }
-            }
+            
         }
 
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -69,19 +63,7 @@ void task_speech_synthesis(void *pvParameters)
             continue;
         }
 
-        static bool first_run = true;
-        if (first_run) {
-            first_run = false;
-            vTaskDelay(pdMS_TO_TICKS(5000));
-
-            char *audio_data = NULL;
-            int audio_len = 0;
-            esp_err_t err = baidu_text_to_speech("你好，我是ESP32语音助手", &audio_data, &audio_len);
-            if (err == ESP_OK && audio_data) {
-                i2s_play_audio(tx_handle, audio_data, audio_len);
-                free(audio_data);
-            }
-        }
+        
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
