@@ -53,8 +53,6 @@ static const char *TAG = "Voice_Assistant";
 #define DETECT_MODE        DET_MODE_90 // 检测灵敏度
 
 // 全局变量
-static QueueHandle_t test_queue = NULL;
-static SemaphoreHandle_t test_mutex = NULL;
 static int s_retry_num = 0;
 static bool wifi_connected = false;
 static i2s_chan_handle_t rx_handle = NULL;
@@ -199,8 +197,8 @@ void wakeup_detection_init(void)
         .afe_mode = SR_MODE_HIGH_PERF,  // 高性能模式
         .afe_perferred_core = 0,    // 使用核心0
         .afe_perferred_priority = 5, // 优先级
-        .alloc_from_psram = 0,      // 不使用PSRAM
-        .agc_mode = 2,              // 自动增益控制模式
+        .memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_INTERNAL,
+        .agc_mode = AFE_MN_PEAK_AGC_MODE_2,
         .pcm_config = {
             .total_ch_num = 1,      // 单声道
             .mic_num = 1,           // 1个麦克风
@@ -255,7 +253,7 @@ void task_wakeup_detection(void *pvParameters)
             if (result) {
                 // 检查是否检测到唤醒词
                 if (result->wakeup_state == WAKENET_DETECTED) {
-                    ESP_LOGI(TAG, "Wakeup word detected! Score: %d", result->wakeup_score);
+                    ESP_LOGI(TAG, "Wakeup word detected! Score: %d", result->wake_word_index);
                     wakeup_detected = true;
                     
                     // 可以在这里触发其他操作，如播放提示音
@@ -263,7 +261,7 @@ void task_wakeup_detection(void *pvParameters)
                 }
                 
                 // 检查语音活动
-                if (result->vad_state == VAD_SPEECH) {
+                if (result->vad_state == AFE_VAD_SPEECH) {
                     ESP_LOGD(TAG, "Speech detected");
                 }
             }
