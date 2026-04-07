@@ -53,24 +53,24 @@ void task_serial_test(void *pvParameters)
             {
                 input_buffer[input_index] = '\0';
                 printf("\r\n");
-                ESP_LOGI(TAG, "Received: %s", input_buffer);
+                //ESP_LOGI(TAG, "Received: %s", input_buffer);
 
                 if (strcmp(input_buffer, "quit") == 0)
                 {
-                    ESP_LOGI(TAG, "Exiting serial test");
+                    //ESP_LOGI(TAG, "Exiting serial test");
                     vTaskDelete(NULL);
                 }
 else if (strncmp(input_buffer, "chat ", 5) == 0)
                 {
                     const char *message = input_buffer + 5;
-                    ESP_LOGI(TAG, "Sending to Zhipu GLM: %s", message);
+                   // ESP_LOGI(TAG, "Sending to Zhipu GLM: %s", message);
                     
                     char response[2048];
                     char *result = zhipu_chat(message, response, sizeof(response));
                     
                     if (result)
                     {
-                        ESP_LOGI(TAG, "Zhipu response: %s", result);
+                        //ESP_LOGI(TAG, "Zhipu response: %s", result);
                         printf("\r\n=== GLM Response ===\r\n");
                         printf("%s\r\n", result);
                         printf("====================\r\n");
@@ -93,7 +93,7 @@ else if (strncmp(input_buffer, "chat ", 5) == 0)
             if (input_index < sizeof(input_buffer) - 1)
             {
                 input_buffer[input_index++] = (char)ch;
-                putchar(ch);
+                //putchar(ch);
             }
         }
         else if (ch == '\b' || ch == 127)

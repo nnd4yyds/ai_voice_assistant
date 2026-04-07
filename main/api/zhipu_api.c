@@ -85,7 +85,7 @@ static char* build_request_body(const char *user_message)
     cJSON_AddItemToArray(messages, user_msg);
     
     cJSON_AddItemToObject(root, "messages", messages);
-    cJSON_AddStringToObject(root, "model", "glm-4-flash");
+    cJSON_AddStringToObject(root, "model", "glm-4.7-flash");
     
     char *json_str = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
@@ -122,7 +122,7 @@ char* zhipu_chat(const char *message, char *response_out, int max_len)
         return NULL;
     }
     
-    ESP_LOGI(TAG, "Sending to Zhipu GLM: %s", message);
+    //ESP_LOGI(TAG, "Sending to Zhipu GLM: %s", message);
     
     if (response_mutex && xSemaphoreTake(response_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
         free(response_buffer);
@@ -147,7 +147,7 @@ char* zhipu_chat(const char *message, char *response_out, int max_len)
     esp_http_client_set_header(client, "Authorization", auth_header);
     esp_http_client_set_post_field(client, request_body, strlen(request_body));
     
-    ESP_LOGI(TAG, "Request body: %s", request_body);
+    //ESP_LOGI(TAG, "Request body: %s", request_body);
     
     esp_err_t err = esp_http_client_perform(client);
     
@@ -155,7 +155,7 @@ char* zhipu_chat(const char *message, char *response_out, int max_len)
     
     if (err == ESP_OK) {
         int status_code = esp_http_client_get_status_code(client);
-        ESP_LOGI(TAG, "HTTP status: %d, response_len: %d", status_code, response_buffer_len);
+        //ESP_LOGI(TAG, "HTTP status: %d, response_len: %d", status_code, response_buffer_len);
         
         if (status_code == 200 && response_buffer) {
             if (xSemaphoreTake(response_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
@@ -178,7 +178,7 @@ char* zhipu_chat(const char *message, char *response_out, int max_len)
                                         add_to_history("user", message);
                                         add_to_history("assistant", content->valuestring);
                                         
-                                        ESP_LOGI(TAG, "Zhipu response: %s", content->valuestring);
+                                        //ESP_LOGI(TAG, "Zhipu response: %s", content->valuestring);
                                     }
                                 }
                             }
