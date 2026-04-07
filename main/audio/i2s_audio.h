@@ -11,8 +11,11 @@
 #define BUFFER_SIZE     1024
 #define AUDIO_BUFFER_SIZE (16000 * 5)
 
+#define I2S_ADC_Db2_OFFSET 0
+
 esp_err_t i2s_microphone_init(i2s_chan_handle_t *rx_handle);
 esp_err_t i2s_speaker_init(i2s_chan_handle_t *tx_handle);
 void i2s_play_audio(i2s_chan_handle_t tx_handle, const char *audio_data, int audio_len);
+int i2s_read_microphone(i2s_chan_handle_t rx_handle, char *audio_buffer, int buffer_size);
 
 #endif

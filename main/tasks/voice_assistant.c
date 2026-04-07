@@ -46,11 +46,9 @@ static int record_audio(void)
     speech_duration_ms = 0;
 
     while (total_bytes < AUDIO_BUFFER_SIZE - BUFFER_SIZE) {
-        size_t bytes_read = 0;
-        esp_err_t ret = i2s_channel_read(rx_handle, (uint8_t *)detect_buffer,
-                        1024 * sizeof(int16_t), &bytes_read, pdMS_TO_TICKS(100));
+        int bytes_read = i2s_read_microphone(rx_handle, (char *)detect_buffer, 1024);
         
-        if (ret == ESP_OK && bytes_read > 0) {
+        if (bytes_read > 0) {
             int energy = detect_energy(detect_buffer, bytes_read / sizeof(int16_t));
             int threshold = 500000;
 
