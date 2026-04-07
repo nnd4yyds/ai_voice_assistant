@@ -132,12 +132,52 @@ int i2s_read_microphone(i2s_chan_handle_t rx_handle, char *audio_buffer, int buf
     int samples_read = bytes_read / sizeof(int32_t);
     int16_t *output = (int16_t *)audio_buffer;
     
-    // Convert 32-bit to 16-bit by extracting upper 16 bits
-    for (int i = 0; i < samples_read; i++) {
-        int32_t sample = raw_buffer[i];
+    int mono_samples = samples_read / 2;
+    for (int i = 0; i < mono_samples; i++) {
+        int32_t sample = raw_buffer[i * 2];
         output[i] = (int16_t)(sample >> 16);
     }
 
     free(raw_buffer);
-    return samples_read * sizeof(int16_t);
+    return mono_samples * sizeof(int16_t);
+}
+
+static int32_t *raw_buffer_static = NULL;
+static int raw_buffer_size = 0;
+
+int i2s_read_microphone_optimized(i2s_chan_handle_t rx_handle, int16_t *buffer, int samples)
+{
+    if (!rx_handle || !buffer || samples <= 0) {
+        return -1;
+    }
+
+    if (!raw_buffer_static || raw_buffer_size < samples) {
+        if (raw_buffer_static) {
+            free(raw_buffer_static);
+        }
+        raw_buffer_size = samples * 2;
+        raw_buffer_static = malloc(raw_buffer_size * sizeof(int32_t));
+        if (!raw_buffer_static) {
+            ESP_LOGE(TAG, "Failed to allocate static buffer");
+            return -1;
+        }
+    }
+
+    size_t bytes_read = 0;
+    size_t bytes_to_read = samples * sizeof(int32_t);
+
+    esp_err_t ret = i2s_channel_read(rx_handle, (uint8_t *)raw_buffer_static,
+                                      bytes_to_read, &bytes_read, pdMS_TO_TICKS(100));
+
+    if (ret != ESP_OK || bytes_read == 0) {
+        return -1;
+    }
+
+    int samples_read = bytes_read / sizeof(int32_t);
+
+    for (int i = 0; i < samples_read; i++) {
+        buffer[i] = (int16_t)(raw_buffer_static[i] >> 16);
+    }
+
+    return samples_read;
 }

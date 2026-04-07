@@ -229,14 +229,23 @@ char *baidu_speech_to_text(const char *audio_data, int audio_len)
         int status_code = esp_http_client_get_status_code(client);
         ESP_LOGI(TAG, "STT HTTP status: %d, buffer_len: %d", status_code, response_buffer_len);
         if (status_code == 200 && response_buffer && response_buffer_len > 0) {
+            ESP_LOGI(TAG, "STT response: %s", response_buffer);
             cJSON *json = cJSON_Parse(response_buffer);
             if (json) {
-                cJSON *result_array = cJSON_GetObjectItem(json, "result");
-                if (result_array && cJSON_IsArray(result_array)) {
-                    cJSON *first_result = cJSON_GetArrayItem(result_array, 0);
-                    if (first_result && cJSON_IsString(first_result)) {
-                        result = strdup(first_result->valuestring);
-                        ESP_LOGI(TAG, "Speech recognition result: %s", result);
+                cJSON *err_no = cJSON_GetObjectItem(json, "err_no");
+                if (err_no && cJSON_IsNumber(err_no) && err_no->valueint != 0) {
+                    cJSON *err_msg = cJSON_GetObjectItem(json, "err_msg");
+                    ESP_LOGE(TAG, "Baidu ASR error %d: %s", 
+                             err_no->valueint, 
+                             err_msg ? err_msg->valuestring : "unknown");
+                } else {
+                    cJSON *result_array = cJSON_GetObjectItem(json, "result");
+                    if (result_array && cJSON_IsArray(result_array)) {
+                        cJSON *first_result = cJSON_GetArrayItem(result_array, 0);
+                        if (first_result && cJSON_IsString(first_result)) {
+                            result = strdup(first_result->valuestring);
+                            ESP_LOGI(TAG, "Speech recognition result: %s", result);
+                        }
                     }
                 }
                 cJSON_Delete(json);

@@ -3,9 +3,10 @@ idf_component_register(
         "main.c"
         "wifi/wifi_manager.c"
         "audio/i2s_audio.c"
+        "audio/wakeup.c"
+        "audio/voice_handler.c"
         "api/zhipu_api.c"
         "api/baidu_api.c"
-        "tasks/voice_assistant.c"
         "serial_test.c"
     INCLUDE_DIRS
         "."
@@ -18,4 +19,5 @@ idf_component_register(
         driver
         json
         mbedtls
+        esp-sr
 )
