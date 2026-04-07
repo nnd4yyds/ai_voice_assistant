@@ -90,3 +90,10 @@ main/secrets.h
 
 # Documentation and resources
 doc/
+
+# PowerShell scripts
+*.ps1
+
+# Deprecated offline speech recognition (no longer used)
+main/audio/offline_sr.c
+main/audio/offline_sr.h
