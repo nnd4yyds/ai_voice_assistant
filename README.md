@@ -1,33 +1,70 @@
 # ESP32-S3 语音助手
 
-基于 ESP32-S3 的智能语音助手，支持本地唤醒词检测和智谱 GLM 大模型对话。
+基于 ESP32-S3 的智能语音助手，支持唤醒词检测、语音识别、大模型对话和语音合成。
 
 ## 特性
 
-- **本地唤醒词检测**：基于 ESP-SR 的 WakeNet 模型，支持 AEC/SE/VAD 音频前处理
-- **智谱 GLM 对话**：集成智谱 AI GLM 大模型服务，支持多轮对话
+- **唤醒词检测**：基于 ESP-SR WakeNet 模型，唤醒词为"你好小智"
+- **语音识别（ASR）**：集成百度语音识别 API，将语音转为文字
+- **大模型对话**：集成智谱 GLM 大模型，支持多轮对话
+- **语音合成（TTS）**：集成百度语音合成 API，将回复转为语音播放
 - **WiFi 管理**：事件驱动 STA 连接，自动重连（最多 5 次）
-- **FreeRTOS 多任务**：唤醒检测任务
+- **FreeRTOS 多任务**：唤醒检测与语音处理并行运行
+
+## 工作流程
+
+```
+┌─────────────────┐
+│  等待唤醒词     │
+│  "你好小智"     │
+└────────┬────────┘
+         │ 检测到唤醒词
+         ▼
+┌─────────────────┐
+│  播放"我在"     │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  录音 5 秒      │
+│  (16kHz PCM)    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  百度 ASR       │
+│  语音 → 文字    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  智谱 GLM       │
+│  对话处理       │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  百度 TTS       │
+│  文字 → 语音    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  扬声器播放     │
+│  回复语音       │
+└─────────────────┘
+         │
+         ▼
+    返回等待唤醒词
+```
 
 ## 硬件需求
 
 ### 开发板
 
-- ESP32-S3（4MB Flash，DIO 模式，80MHz）
+- ESP32-S3（16MB Flash，DIO 模式，80MHz，8MB PSRAM）
 
 ### 引脚配置说明
-
-ESP32-S3 开发板的丝印可能有不同的标注方式：
-
-**常见丝印类型：**
-1. **GPIO 直接标注**：开发板直接标注 `26`、`22`、`34`、`25` 等 GPIO 编号
-2. **物理引脚编号**：标注物理封装位置（如 `P5`、`P26` 等），需查阅开发板规格文档对应到 GPIO
-3. **自定义编号**：标注 `D26`、`IO26` 等，通常对应 GPIO 编号
-
-**如何确认引脚映射：**
-- 查看开发板的原理图或引脚图
-- 开发板官网或文档通常会提供 GPIO 映射表
-- 常见 ESP32-S3 开发板（如 ESP32-S3-DevKitC-1）的引脚图可在 [乐鑫官网](https://www.espressif.com/) 找到
 
 **代码中的 GPIO 配置（`main/secrets.h`）：**
 ```c
@@ -76,15 +113,6 @@ ESP32-S3 开发板的丝印可能有不同的标注方式：
 - 麦克风和扬声器共用 I2S 时钟线（BCLK 和 WS）
 - 麦克风和扬声器的数据线（DIN/DOUT）分别连接到不同的 GPIO
 
-**常见 ESP32-S3 开发板引脚参考：**
-- **ESP32-S3-DevKitC-1**：开发板上通常会直接标注 GPIO 编号（如 `26`、`22`、`34`、`25`）
-- **ESP32-S3-DevKitM-1**：类似，直接标注 GPIO 编号
-- **ESP32-S3-USB-OTG**：查看开发板规格文档的引脚图
-
-### 接线参考
-
-麦克风和扬声器共用 I2S 时钟线（BCLK 和 WS），这是常见的硬件设计方案，可以节省 GPIO 资源。
-
 ### 音频参数
 
 **麦克风配置：**
@@ -97,7 +125,6 @@ ESP32-S3 开发板的丝印可能有不同的标注方式：
 - 采样率：16000 Hz
 - 位深：16 bit
 - 声道：单声道
-- 音频缓冲区：80000 字节（约 5 秒）
 
 ## 项目结构
 
@@ -105,18 +132,17 @@ ESP32-S3 开发板的丝印可能有不同的标注方式：
 ├── main/
 │   ├── main.c                  # 入口：初始化与任务创建
 │   ├── secrets.h               # 凭据与引脚配置（已忽略）
-│   ├── secrets.h.example       # secrets.h 模板
 │   ├── CMakeLists.txt          # 组件注册与依赖
 │   ├── idf_component.yml       # 组件清单（esp-sr）
 │   ├── api/
 │   │   ├── zhipu_api.c/h       # 智谱 GLM API 客户端（对话）
+│   │   └── baidu_api.c/h       # 百度语音识别与语音合成接口
 │   ├── audio/
 │   │   ├── i2s_audio.c/h       # I2S 麦克风与扬声器驱动
 │   │   ├── wakeup.c/h          # ESP-SR 唤醒词检测任务
-│   ├── tasks/
-│   │   ├── app_tasks.c/h       # FreeRTOS 应用任务
+│   │   └── voice_handler.c/h   # 语音处理流程（录音→ASR→GLM→TTS）
 │   └── wifi/
-│       ├── wifi_manager.c/h    # WiFi STA 连接管理
+│       └── wifi_manager.c/h    # WiFi STA 连接管理
 ├── managed_components/
 │   └── espressif__esp-sr/      # ESP-SR 组件（含 ESP-DSP 依赖）
 └── build/                      # 编译输出
@@ -134,7 +160,7 @@ ESP32-S3 开发板的丝印可能有不同的标注方式：
 
 ### 2. 配置凭据
 
-复制模板并填写你的 WiFi 信息：
+复制模板并填写你的配置信息：
 
 ```bash
 cp main/secrets.h.example main/secrets.h
@@ -143,8 +169,16 @@ cp main/secrets.h.example main/secrets.h
 编辑 `main/secrets.h`，填入以下内容：
 
 ```c
+// WiFi配置
 #define WIFI_SSID "你的WiFi名称"
 #define WIFI_PASSWORD "你的WiFi密码"
+
+// 百度语音技术配置
+#define BAIDU_API_KEY "你的百度API Key"
+#define BAIDU_SECRET_KEY "你的百度Secret Key"
+
+// 智谱AI (ChatGLM) 配置
+#define ZHIPU_API_KEY "你的智谱API Key"
 ```
 
 ### 3. 编译与烧录
@@ -157,14 +191,22 @@ idf.py build
 idf.py -p COM13 flash monitor
 ```
 
+### 4. 使用说明
+
+1. 设备启动后会打印 `Wakeup detection running...`
+2. 对着麦克风说 **"你好小智"**（唤醒词）
+3. 听到 **"我在"** 后，开始说话（5秒内）
+4. 等待 GLM 处理并听到语音回复
+5. 再次说唤醒词开始下一轮对话
+
 ## 架构说明
 
 ### FreeRTOS 任务
 
 | 任务 | 功能 |
 |------|------|
-| `task_main_loop` | 等待 WiFi 连接 |
-| `task_wakeup_detection` | 持续运行 ESP-SR AFE 管道，检测唤醒词 |
+| `task_wakeup_detection` | 持续检测唤醒词"你好小智" |
+| `task_serial_test` | 串口测试命令（chat、clear、quit） |
 
 ### 模块说明
 
@@ -173,17 +215,39 @@ idf.py -p COM13 flash monitor
 | `wifi/wifi_manager` | WiFi STA 连接与状态管理 |
 | `audio/i2s_audio` | I2S 麦克风录音（32位→16位转换）与扬声器播放（16位） |
 | `audio/wakeup` | ESP-SR 唤醒词检测（WakeNet + AFE） |
+| `audio/voice_handler` | 语音处理流程：录音 → ASR → GLM → TTS |
 | `api/zhipu_api` | 智谱 GLM 大模型对话接口 |
 | `api/baidu_api` | 百度语音识别与语音合成接口 |
-| `tasks/app_tasks` | 应用层 FreeRTOS 任务实现 |
+
+### API 调用流程
+
+```
+用户语音 → INMP441麦克风 → I2S读取 → 16bit PCM
+                                    ↓
+                              百度ASR API
+                                    ↓
+                              文字内容
+                                    ↓
+                              智谱GLM API
+                                    ↓
+                              回复文字
+                                    ↓
+                              百度TTS API
+                                    ↓
+                              音频数据
+                                    ↓
+                              MAX98357A扬声器 → 用户听到回复
+```
 
 ## 故障排除
 
 | 问题 | 排查方法 |
 |------|----------|
 | WiFi 连接失败 | 检查 SSID/密码，确认信号强度 |
-| 唤醒词无响应 | 检查麦克风 I2S 接线，确认 ESP-SR 库已安装 |
-| 扬声器无声 | 检查 I2S 接线（BCLK/WS/DOUT），确认供电 |
+| 唤醒词无响应 | 检查麦克风 I2S 接线，确认说"你好小智" |
+| ASR 转换失败 | 检查百度 API Key 是否有效，确认网络连接 |
+| GLM 对话失败 | 检查智谱 API Key 是否有效 |
+| TTS 播放无声 | 检查扬声器 I2S 接线（BCLK/WS/DOUT），确认供电 |
 | 编译失败 | 运行 `idf.py fullclean` 后重新编译 |
 
 ## 依赖
@@ -212,11 +276,20 @@ INMP441 是一款 I2S 数字麦克风，输出格式为：
 2. 右移 16 位，提取高 16 位
 3. 输出 16 位 PCM 格式用于语音识别 API
 
-这种处理方式保留了原始音频的主要信息，同时兼容百度语音识别 API（要求 16 位 PCM）。
-
 ### I2S 引脚共享
 
 本设计使用 INMP441（麦克风）和 MAX98357A（扬声器）共用 I2S 时钟线（BCLK 和 WS）：
 - 两种模块都作为 I2S 从设备，主设备为 ESP32-S3
 - 共享时钟可以减少 GPIO 使用，简化接线
 - 麦克风和扬声器可以在不同的 I2S 通道（I2S_NUM_0 和 I2S_NUM_1）独立工作
+
+### 唤醒词模型
+
+使用 ESP-SR 提供的预训练唤醒词模型：
+- 模型名称：`wn9_nihaoxiaozhi_tts`
+- 唤醒词：**"你好小智"**
+
+**自定义唤醒词：**
+
+如需自定义唤醒词（如"嘬嘬嘬"），请参考：
+https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/wake_word_engine/ESP_Wake_Words_Customization.html
