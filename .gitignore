@@ -87,3 +87,6 @@ RemoteSystemsTempFiles/*
 
 # Secrets (WiFi passwords, API keys)
 main/secrets.h
+
+# Documentation and resources
+doc/
